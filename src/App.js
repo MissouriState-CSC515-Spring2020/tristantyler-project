@@ -1,113 +1,101 @@
-import React, { Component } from 'react';
-import { BrowserRouter as Router, Route } from 'react-router-dom';
-import Photos from './components/Photos';
+import React, {Component} from 'react';
+import {BrowserRouter as Router, Route} from 'react-router-dom';
+import Videos from './components/Videos';
 import Header from './components/layout/Header';
-import FilterHeader from './components/layout/FilterHeader';
-import PhotoSelect from './components/PhotoSelect';
-import { Helmet } from 'react-helmet';
+import VideoSelect from './components/VideoSelect';
+import Categories from './components/Categories'
+import {Helmet} from 'react-helmet';
+import { Container, Col } from 'react-bootstrap';
 
-import data from './data.json';
+
+const API = process.env.REACT_APP_GOOGLE_API_KEY
+const channelID = "UCBY5hSLBKHpaVLo61cN7tJA"
+const result = 20;
+
+var finalURL = `https://www.googleapis.com/youtube/v3/search?key=${API}&channelId=${channelID}&part=snippet,id&order=date&maxResults=${result}`
+var playURL = `https://www.googleapis.com/youtube/v3/playlists?key=${API}&channelId=${channelID}&part=snippet&regionCode=US&maxResults=${result}`
 
 class App extends Component {
 
-  loadData = JSON.parse(JSON.stringify(data));
-
   state = {
-    photos: [ ],
-    photocopy: [ ],
-    photoselect:{ },
-    tabselect: { tab: 'home' },
-  }
-
-  componentDidMount(){
-    this.setState({photos: [...this.loadData]});
-    this.setState({photocopy: [...this.loadData]});
-    this.setState({photoselect: [...this.state.photos.filter( photo =>
-      photo.id === 1)]});
-  }
-
-
-  // Categories
-  getCategory = (category) => {
-    if (category === "all"){
-      this.setState({ photocopy: [...this.state.photos]});
-    }else{
-      this.setState({ photocopy: [...this.state.photos.filter( photo =>
-        photo.category === category)]});
+    videos: [],
+    playlists: [],
+    tabselect: {
+      tab: 'home'
     }
-    this.setTab('category')
-    document.title = "Categories | " + category
   }
 
-  // Select
-  getSelect = (category, id, psrc) => {
-    this.setState(prevState =>({
-      photoselect: {
-        ...prevState.photoselect,
-        id: id,
-        psrc: psrc,
-        category: category
-      }}))
-    this.setTab('select')
+  async componentDidMount(){
+    const url = finalURL;
+    const response = await fetch(url);
+    const data = await response.json();
+    // console.log("APP API called", data)
+    const videos = data.items.map(obj => obj = {
+      id: obj.id.videoId,
+      url: "https://www.youtube.com/watch?v="+obj.id.videoId,
+      image: obj.snippet.thumbnails.high.url,
+      title: obj.snippet.title,
+      channel: obj.snippet.channelTitle,
+    })
+    this.setState({videos})
+    localStorage.setItem('videos', JSON.stringify(videos))
+
+    const urlp = playURL;
+    const responsep = await fetch(urlp);
+    const datap = await responsep.json();
+    // console.log("Header API Called")
+    const playlists = datap.items.map(obj => obj ={
+      title: obj.snippet.title,
+      id: obj.id
+    })
+    this.setState({playlists})
+    localStorage.setItem('playlists', JSON.stringify(playlists))
+
   }
 
   // Set Tab
   setTab = (tab) => {
-    this.setState(prevState =>({
+    this.setState(prevState => ({
       tabselect: {
         ...prevState.tabselect,
         tab: tab
-      }}))
-    if(tab !== "category"){
-      this.setState({ photocopy: [...this.state.photos]});
-    }
+      }
+    }))
   }
 
   render() {
 
-    return (
-      <Router>
-        <div className="App">
-          <Header setTab={this.setTab} tabselect={this.state.tabselect} getCategory={this.getCategory}/>
-          <div className="container-fluid">
-          <Route exact path="/" render={props => (
-            <div>
+    return (<Router>
+      <Container fluid >
+        <Header setTab={this.setTab} playlists={this.state.playlists} />
+        <Col sm>
+          <Route exact="exact" path="/" render={props => (<div>
               <Helmet>
                 <title>Home | Recent</title>
               </Helmet>
-              <FilterHeader tabselect={this.state.tabselect} getCategory={this.getCategory}/>
               <React.Fragment>
-                <Photos photos={this.state.photos} getCategory={this.getCategory}
-                  getSelect={this.getSelect} tabselect={this.state.tabselect}/>
+                <Videos videos={this.state.videos} />
               </React.Fragment>
-            </div>
-            )} />
-          <Route path="/categories/" render={props => (
-              <div>
-                <Helmet>
-                  <title>Categories | All</title>
-                </Helmet>
-                <FilterHeader tabselect={this.state.tabselect} getCategory={this.getCategory}/>
-                <React.Fragment>
-                  <Photos photos={this.state.photocopy} getCategory={this.getCategory}
-                    getSelect={this.getSelect} tabselect={this.state.tabselect} />
-                </React.Fragment>
-              </div>
-            )} />
-          <Route exact path="/select/:id" render={props => (
-            <div>
+            </div>)}/>
+          <Route exact="exact" path="/categories/:id" render={props => (<div>
               <Helmet>
-                <title>Photo Select</title>
+                <title>Categories</title>
               </Helmet>
               <React.Fragment>
-                <PhotoSelect {...props} photos={this.state.photos}  />
+                <Categories {...props} key={this.state.tabselect.tab} />
               </React.Fragment>
-            </div>
-            )} />
-          </div>
-          </div>
-      </Router>
-    );
+            </div>)}/>
+          <Route exact="exact" path="/select/:id" render={props => (<div>
+              <Helmet>
+                <title>Video Select</title>
+              </Helmet>
+              <React.Fragment>
+                <VideoSelect {...props} tabselect={this.state.tabselect} />
+              </React.Fragment>
+            </div>)}/>
+        </Col>
+      </Container>
+    </Router>);
   }
 }
 
