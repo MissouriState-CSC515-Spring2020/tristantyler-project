@@ -4,9 +4,10 @@ import {Navbar, Nav, NavDropdown} from 'react-bootstrap';
 
 export class Header extends Component {
 
+
   render() {
       return (<Navbar bg="dark" variant="dark">
-                <Navbar.Brand>Photos</Navbar.Brand>
+                <Navbar.Brand>Videos</Navbar.Brand>
                 <Nav className="mr-auto">
                   <Link className="nav-link" onClick={this.props.setTab.bind(this, 'home')} to="/">
                     Home
@@ -15,15 +16,18 @@ export class Header extends Component {
                     <NavDropdown.Item>
                       <Link to="/categories/all" onClick={this.props.setTab.bind(this, "all")}>All</Link>
                     </NavDropdown.Item>
-                    <NavDropdown.Item>
-                      <Link to="/categories/water" onClick={this.props.setTab.bind(this, "water")}>Water</Link>
-                    </NavDropdown.Item>
-                    <NavDropdown.Item>
-                      <Link to="/categories/bridge" onClick={this.props.setTab.bind(this, "bridge")}>Bridge</Link>
-                    </NavDropdown.Item>
-                    <NavDropdown.Item>
-                      <Link to="/categories/nature" onClick={this.props.setTab.bind(this, "nature")}>Nature</Link>
-                    </NavDropdown.Item>
+
+                    {
+                      this.props.playlists.map((item, i) => {
+                        const s = `/categories/${item.title}`
+                        var frame = <NavDropdown.Item>
+                                      <Link to={s} onClick={this.props.setTab.bind(this, item.title)}>{item.title}</Link>
+                                    </NavDropdown.Item>
+                        return frame
+                      })
+                    }
+                    {this.frame}
+
                   </NavDropdown>
                 </Nav>
               </Navbar>)
